@@ -166,7 +166,13 @@
                  <input type="text" name="nome" placeholder="Nome" required>
              </div>
              <div class="form-group">
+                 <input type="text" name="carga" placeholder="Carga Horária" required>
+             </div>
+             <div class="form-group">
                  <input type="email" name="email" placeholder="Email" required>
+             </div>
+            <div class="form-group">
+                 <input type="codigo" name="codigo" placeholder="Codigo 4 digítos" required>
              </div>
              <div class="form-group">
                  <input type="password" name="senha" placeholder="Senha" required>
@@ -669,7 +675,9 @@
             const data = {
                 nome: form.nome.value,
                 email: form.email.value,
-                senha: form.senha.value
+                senha: form.senha.value,
+                carga: form.carga.value,
+                codigo: form.codigo.value
             };
         console.log("dados", data);
             fetch('/funcionarios/cadastrar', {
@@ -682,6 +690,7 @@
             .then(response => response.text())
              .then(result => showMessage(result.message))
              .catch(error => showMessage(error.message, 'error'));
+             alert("Colaborador registrado com sucesso")
              window.location.reload();
         }
          
