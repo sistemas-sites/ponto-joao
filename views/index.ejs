@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+ <html lang="pt-br">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Sistema de Ponto</title>
+     <style>
+         body {
+             font-family: 'Roboto', sans-serif;
+             background-color: #f0f0f0;
+             margin: 0;
+             padding: 20px;
+             text-align: center;
+         }
+ 
+         h1 {
+             color: #333;
+             margin-bottom: 20px;
+         }
+ 
+         .container {
+             max-width: 800px;
+             margin: 0 auto;
+             padding: 20px;
+             background-color: #fff;
+             border-radius: 8px;
+             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+         }
+ 
+         .form-group {
+             margin-bottom: 15px;
+         }
+ 
+         label {
+             display: block;
+             margin-bottom: 5px;
+             font-weight: bold;
+         }
+ 
+         input[type="text"], input[type="email"], input[type="password"], input[type="date"], input[type="time"], select {
+             width: 100%;
+             padding: 10px;
+             border: 1px solid #ccc;
+             border-radius: 5px;
+         }
+ 
+         button {
+             padding: 10px 20px;
+             font-size: 16px;
+             border: none;
+             border-radius: 5px;
+             cursor: pointer;
+             margin-top: 10px;
+             transition: background-color 0.3s;
+         }
+ 
+         .btn-primary {
+             background-color: #007BFF;
+             color: white;
+         }
+ 
+         .btn-success {
+             background-color: #28A745;
+             color: white;
+         }
+ 
+         .btn-secondary {
+             background-color: #6C757D;
+             color: white;
+         }
+ 
+         button:hover {
+             opacity: 0.9;
+         }
+ 
+         .message {
+             display: none;
+             margin: 20px 0;
+             padding: 10px;
+             border-radius: 5px;
+         }
+ 
+         .message.success {
+             background-color: #28A745;
+             color: white;
+         }
+ 
+         .message.error {
+             background-color: #DC3545;
+             color: white;
+         }
+         table {
+            width: 100%;
+            border-collapse: collapse; 
+          }
+        
+          table, th, td {
+            border: 1px solid black; 
+          }
+        
+          th, td {
+            padding: 10px;
+            text-align: left;            
+          }
+          .saldo-positivo {
+            color: blue; 
+        }
+        
+        .saldo-negativo {
+            color: red;  
+        }
+ 
+         @media (max-width: 768px) {
+             button {
+                 width: 100%;
+             }
+         }
+         
+         .ed-srec{
+            background-color: #DC3545;
+            color: #f0f0f0;
+         }
+     </style>
+ </head>
+ <body>
+     <div class="container">
+         <h1>Bata Seu Ponto</h1>
+         <div id="messageBox" class="message"></div> <!-- Caixa de mensagens -->
+ 
+         <!-- Campo para escolher o funcionário -->
+         <form id="pontoForm">
+             <div class="form-group">
+                 <label for="funcionario_id">Selecione Seu Nome:</label>
+                 <select name="funcionario_id" id="funcionario_id" disabled style="color: black; font-weight: bold;">
+                     <% funcionarios.forEach(funcionario => { %>
+                         <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                     <% }) %>
+                 </select>
+             </div>
+ 
+             <div class="buttons">
+                 <button type="button" class="btn-primary" onclick="baterPonto('entrada')">Bater Entrada</button>
+                 <button type="button" class="btn-secondary" onclick="baterPonto('saida-almoco')">Saída para Almoço</button>
+                 <button type="button" class="btn-secondary" onclick="baterPonto('volta-almoco')">Volta do Almoço</button>
+                 <button type="button" class="btn-primary" onclick="baterPonto('saida')">Bater Saída</button>
+             </div>
+         </form><br><br>
+         <div id="loginDiv">
+            <button class="bold" type="button" onclick="verificar()">Acesso Restrito</button><br><br>
+            <button id="logoutButton" style="background-color: #DC3545; color: white;">Sair</button>
+            <div id="conteudoProteted" style="display:none;">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="senha_login">Senha:</label>
+                    <input type="password" id="senha_login" placeholder="Digite sua senha" required>
+                </div>
+                <button type="button" onclick="verificarSenha()">Entrar</button>
+            </form>
+            </div>
+        </div>
+        <div id="conteudoProtegido" style="display:none;">
+            <button class="ed-srec" onclick="fecharSessao()">Fechar Sessão</button>
+         <h2>Cadastrar Novo Funcionário</h2>
+         <form id="cadastroFuncionarioForm">
+             <div class="form-group">
+                 <input type="text" name="nome" placeholder="Nome" required>
+             </div>
+             <div class="form-group">
+                 <input type="email" name="email" placeholder="Email" required>
+             </div>
+             <div class="form-group">
+                 <input type="password" name="senha" placeholder="Senha" required>
+             </div>
+             <button type="button" class="btn-success" onclick="cadastrarFuncionario()">Cadastrar</button>
+         </form>
+            
+         <h2>Gerar Relatório de Horas Trabalhadas</h2>
+<form id="relatorioForm">
+    <div class="form-group">
+        <label for="funcionario_id">Funcionário:</label>
+        <select name="funcionario_id" id="funcionario_id_relatorio">
+            <% funcionarios.forEach(funcionario => { %>
+                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+            <% }) %>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="data_inicio">Data Início:</label>
+        <input type="date" id="data_inicio" required>
+    </div>
+    <div class="form-group">
+        <label for="data_fim">Data Fim:</label>
+        <input type="date" id="data_fim" required>
+    </div>
+    <button type="button" class="btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
+    <button onclick="exportarRelatorioParaCSV()">Exportar para CSV</button>
+
+    <button type="button" class="btn-secondary" onclick="exportarRelatorio()">Exportar Relatório</button>
+</form>
+
+<h3>Relatório</h3>
+<div id="saldoTotalDisplay"></div>
+<table id="tabelaRelatorio">
+    <thead>
+        <tr>
+            <th>Data</th>
+            <th>Entrada</th>
+            <th>Saída Almoço</th>
+            <th>Volta Almoço</th>
+            <th>Saída</th>
+            <th>Horas</th>
+            <th>Saldos</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Linhas do relatório serão adicionadas aqui dinamicamente -->
+    </tbody>
+</table>
+
+         <h2>Editar Registro de Ponto</h2>
+         <form id="editarPontoForm">
+             <div class="form-group">
+                 <label for="funcionario_id_editar">Funcionário:</label>
+                 <select name="funcionario_id" id="funcionario_id_editar">
+                     <% funcionarios.forEach(funcionario => { %>
+                         <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                     <% }) %>
+                 </select>
+             </div>
+ 
+             <div class="form-group">
+                 <label for="data_editar">Data:</label>
+                 <input type="date" id="data_editar" required>
+             </div>
+ 
+             <div class="form-group">
+                 <label for="entrada_editar">Entrada:</label>
+                 <input type="time" id="entrada_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="saida_almoco_editar">Saída Almoço:</label>
+                 <input type="time" id="saida_almoco_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="volta_almoco_editar">Volta Almoço:</label>
+                 <input type="time" id="volta_almoco_editar">
+             </div>
+ 
+             <div class="form-group">
+                 <label for="saida_editar">Saída:</label>
+                 <input type="time" id="saida_editar">
+             </div>
+ 
+             <button type="button" class="btn-success" onclick="editarPonto()">Salvar Alterações</button>
+         </form>
+     
+     <form id="deleteForm" method="POST" action="/deletar-funcionario">
+        <label for="funcionario_id">Selecione o funcionário para excluir:</label>
+        <select name="funcionario_id" id="delete">
+            <% funcionarios.forEach(funcionario => { %>
+                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+            <% }) %>
+        </select>
+        <button type="submit">Excluir Funcionário</button>
+    </form>
+</div>
+    
+     <script>
+         function showMessage(message, type = 'success') {
+             const messageBox = document.getElementById('messageBox');
+             messageBox.textContent = message;
+             messageBox.className = `message ${type}`;
+             messageBox.style.display = 'block';
+ 
+             setTimeout(() => {
+                 messageBox.style.display = 'none';
+             }, 3000);
+         }
+ 
+         function baterPonto(tipo) {
+             const form = document.getElementById('pontoForm');
+             const funcionario_id = form.funcionario_id.value;
+ 
+             const data = { funcionario_id };
+ 
+             fetch(`/ponto/${tipo}`, {
+                 method: 'POST',
+                 headers: {
+                     'Content-Type': 'application/json'
+                 },
+                 body: JSON.stringify(data)
+             })
+             .then(response => response.json())
+             .then(result => showMessage(result.message))
+             .catch(error => showMessage(error.message, 'error'));
+         }
+ 
+         function gerarRelatorio() {
+            const funcionario_id = document.querySelector('#funcionario_id_relatorio').value;
+            const data_inicio = document.querySelector('#data_inicio').value;
+            const data_fim = document.querySelector('#data_fim').value;
+            console.log('Funcionario ID:', funcionario_id, 'Data Início:', data_inicio, 'Data Fim:', data_fim);
+            fetch(`/relatorio?funcionario_id=${funcionario_id}&data_inicio=${data_inicio}&data_fim=${data_fim}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erro ao obter o relatório');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message); 
+                    } else {
+                        exibirRelatorio(data); 
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao gerar relatório:', error);
+                });
+        }
+/*
+        function exibirRelatorio(dados) {
+            console.log("Exibindo relatório:", dados);
+            const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
+            tabelaRelatorio.innerHTML = '';
+        
+            function formatarHorasEMinutos(minutosTotais) {
+                const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                const minutos = Math.abs(minutosTotais % 60);
+                return `${horas}h ${minutos.toFixed(2)}m`;
+            }
+        
+            function ajustarHorario(horario) {
+                const [hora, minuto, segundo] = horario.split(':').map(Number);
+                return [hora, minuto, segundo];
+            }
+        
+            let saldoTotalMinutos = 0;
+            dados.pontos.forEach(ponto => {
+                let horasTrabalhadas = 0;
+        
+                const [horaEntrada, minutoEntrada, segundoEntrada] = ajustarHorario(ponto.entrada);
+                const [horaSaida, minutoSaida, segundoSaida] = ajustarHorario(ponto.saida);
+        
+                const entradaEmMinutos = horaEntrada * 60 + minutoEntrada + segundoEntrada / 60;
+                let saidaEmMinutos = horaSaida * 60 + minutoSaida + segundoSaida / 60;
+        
+                const horaDobroInicio = 22 * 60;
+        
+                if (saidaEmMinutos < entradaEmMinutos) {
+                    saidaEmMinutos += 1440; // Ajuste para o dia seguinte
+                }
+        
+                if (ponto.saida_almoco && ponto.volta_almoco) {
+                    const [horaSaidaAlmoco, minutoSaidaAlmoco, segundoSaidaAlmoco] = ajustarHorario(ponto.saida_almoco);
+                    const [horaVoltaAlmoco, minutoVoltaAlmoco, segundoVoltaAlmoco] = ajustarHorario(ponto.volta_almoco);
+        
+                    const saidaAlmocoEmMinutos = horaSaidaAlmoco * 60 + minutoSaidaAlmoco + segundoSaidaAlmoco / 60;
+                    const voltaAlmocoEmMinutos = horaVoltaAlmoco * 60 + minutoVoltaAlmoco + segundoVoltaAlmoco / 60;
+        
+                    // Período antes do almoço
+                    horasTrabalhadas += (saidaAlmocoEmMinutos - entradaEmMinutos);
+        
+                    // Período após o almoço, incluindo horas dobradas se o almoço foi depois das 22:00
+                    if (voltaAlmocoEmMinutos >= horaDobroInicio) {
+                        horasTrabalhadas += (saidaEmMinutos - voltaAlmocoEmMinutos) * 2;
+                    } else {
+                        horasTrabalhadas += Math.min(horaDobroInicio, saidaEmMinutos) - voltaAlmocoEmMinutos;
+                        if (saidaEmMinutos > horaDobroInicio) {
+                            const minutosApos22 = saidaEmMinutos - horaDobroInicio;
+                            horasTrabalhadas += minutosApos22 * 2;
+                        }
+                    }
+        
+                    // Subtraindo dinamicamente o tempo de almoço
+                    const tempoAlmoco = voltaAlmocoEmMinutos - saidaAlmocoEmMinutos;
+                    horasTrabalhadas -= tempoAlmoco;
+        
+                } else {
+                    // Cálculo direto entre entrada e saída sem horário de almoço
+                    if (entradaEmMinutos >= horaDobroInicio) {
+                        horasTrabalhadas = (saidaEmMinutos - entradaEmMinutos) * 2;
+                    } else {
+                        horasTrabalhadas = Math.min(horaDobroInicio, saidaEmMinutos) - entradaEmMinutos;
+                        if (saidaEmMinutos > horaDobroInicio) {
+                            const minutosApos22 = saidaEmMinutos - horaDobroInicio;
+                            horasTrabalhadas += minutosApos22 * 2;
+                        }
+                    }
+                }
+        
+                // Saldo do dia
+                const saldoDiario = horasTrabalhadas - 480;
+                saldoTotalMinutos += saldoDiario;
+        
+                const linha = document.createElement('tr');
+                linha.innerHTML = `
+                    <td>${ponto.data}</td>
+                    <td>${ponto.entrada || 'N/A'}</td>
+                    <td>${ponto.saida_almoco || 'N/A'}</td>
+                    <td>${ponto.volta_almoco || 'N/A'}</td>
+                    <td>${ponto.saida || 'N/A'}</td>
+                    <td>${formatarHorasEMinutos(horasTrabalhadas += 60)}</td>
+                    <td>${formatarHorasEMinutos(saldoDiario)}</td>
+                `;
+                tabelaRelatorio.appendChild(linha);
+            });
+        
+            const saldoTotalFormatado = formatarHorasEMinutos(saldoTotalMinutos);
+            console.log("saldo total", saldoTotalFormatado);
+        
+            const linhaSaldoTotal = document.createElement('tr');
+            const classeSaldo = saldoTotalMinutos >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+        
+            linhaSaldoTotal.innerHTML = `
+                <td colspan="6"><strong>Saldo Total</strong></td>
+                <td class="${classeSaldo}"><strong>${saldoTotalFormatado}</strong></td>
+            `;
+            tabelaRelatorio.appendChild(linhaSaldoTotal);
+        }
+        */
+        function exibirRelatorio(dados) {
+            console.log("Exibindo relatório:", dados);
+            const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
+            tabelaRelatorio.innerHTML = '';
+        
+            // Função para formatar as horas e minutos
+            //function formatarHorasEMinutos(minutosTotais) {
+              //  const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                //const minutos = Math.abs(minutosTotais % 60);
+                //return `${horas}h ${minutos}m`;
+            //}
+            function formatarHorasEMinutos(minutosTotais) {
+                const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                const minutos = Math.abs(minutosTotais % 60);
+                const sinal = minutosTotais < 0 ? '-' : '';
+                return `${sinal}${horas}h ${minutos}m`;
+            }
+            
+        
+            // Função para ajustar o horário, ignorando os segundos
+            function ajustarHorario(horario) {
+                const [hora, minuto] = horario.split(':').map(Number);
+                return [hora, minuto];
+            }
+        
+            let saldoTotalMinutos = 0;
+            dados.pontos.forEach(ponto => {
+                let horasTrabalhadas = 0;
+        
+                const [horaEntrada, minutoEntrada] = ajustarHorario(ponto.entrada);
+                const [horaSaida, minutoSaida] = ajustarHorario(ponto.saida);
+        
+                const entradaEmMinutos = horaEntrada * 60 + minutoEntrada;
+                let saidaEmMinutos = horaSaida * 60 + minutoSaida;
+        
+                const horaDobroInicio = 22 * 60;
+        
+                if (saidaEmMinutos < entradaEmMinutos) {
+                    saidaEmMinutos += 1440; // Ajuste para o dia seguinte
+                }
+        
+                if (ponto.saida_almoco && ponto.volta_almoco) {
+                    const [horaSaidaAlmoco, minutoSaidaAlmoco] = ajustarHorario(ponto.saida_almoco);
+                    const [horaVoltaAlmoco, minutoVoltaAlmoco] = ajustarHorario(ponto.volta_almoco);
+        
+                    const saidaAlmocoEmMinutos = horaSaidaAlmoco * 60 + minutoSaidaAlmoco;
+                    const voltaAlmocoEmMinutos = horaVoltaAlmoco * 60 + minutoVoltaAlmoco;
+        
+                    // Período antes do almoço
+                    horasTrabalhadas += (saidaAlmocoEmMinutos - entradaEmMinutos);
+        
+                    // Período após o almoço
+                    if (voltaAlmocoEmMinutos >= horaDobroInicio) {
+                        horasTrabalhadas += (saidaEmMinutos - voltaAlmocoEmMinutos) * 2;
+                    } else {
+                        horasTrabalhadas += Math.min(horaDobroInicio, saidaEmMinutos) - voltaAlmocoEmMinutos;
+                        if (saidaEmMinutos > horaDobroInicio) {
+                            const minutosApos22 = saidaEmMinutos - horaDobroInicio;
+                            horasTrabalhadas += minutosApos22 * 2;
+                        }
+                    }
+                } else {
+                    // Cálculo direto entre entrada e saída
+                    if (entradaEmMinutos >= horaDobroInicio) {
+                        horasTrabalhadas = (saidaEmMinutos - entradaEmMinutos) * 2;
+                    } else {
+                        horasTrabalhadas = Math.min(horaDobroInicio, saidaEmMinutos) - entradaEmMinutos;
+                        if (saidaEmMinutos > horaDobroInicio) {
+                            const minutosApos22 = saidaEmMinutos - horaDobroInicio;
+                            horasTrabalhadas += minutosApos22 * 2;
+                        }
+                    }
+                }
+        
+                // Saldo do dia
+                const saldoDiario = horasTrabalhadas - 480;
+                saldoTotalMinutos += saldoDiario;
+        
+                // Criação da linha na tabela
+                const linha = document.createElement('tr');
+                linha.innerHTML = `
+                    <td>${ponto.data}</td>
+                    <td>${ponto.entrada || 'N/A'}</td>
+                    <td>${ponto.saida_almoco || 'N/A'}</td>
+                    <td>${ponto.volta_almoco || 'N/A'}</td>
+                    <td>${ponto.saida || 'N/A'}</td>
+                    <td>${formatarHorasEMinutos(horasTrabalhadas)}</td>
+                    <td>${formatarHorasEMinutos(saldoDiario)}</td>
+                `;
+                tabelaRelatorio.appendChild(linha);
+            });
+        
+            // Saldo total
+            const saldoTotalFormatado = formatarHorasEMinutos(saldoTotalMinutos);
+            console.log("Saldo total", saldoTotalFormatado);
+        
+            const linhaSaldoTotal = document.createElement('tr');
+            const classeSaldo = saldoTotalMinutos >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+        
+            linhaSaldoTotal.innerHTML = `
+                <td colspan="6"><strong>Saldo Total</strong></td>
+                <td class="${classeSaldo}"><strong>${saldoTotalFormatado}</strong></td>
+            `;
+            tabelaRelatorio.appendChild(linhaSaldoTotal);
+        }
+        
+        
+        
+
+        function exportarRelatorioParaCSV() {
+            const tabela = document.querySelector('#tabelaRelatorio');
+            let csvContent = '';
+            
+            // Extrair cabeçalho
+            const headers = Array.from(tabela.querySelectorAll('thead th')).map(th => th.textContent).join(',');
+            csvContent += headers + '\n';
+            
+            // Extrair linhas de dados
+            const linhas = Array.from(tabela.querySelectorAll('tbody tr'));
+            linhas.forEach(linha => {
+                const cols = Array.from(linha.querySelectorAll('td')).map(td => td.textContent.trim()).join(',');
+                csvContent += cols + '\n';
+            });
+            
+            // Criar arquivo Blob e iniciar download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'relatorio.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+
+        /*
+        function exibirRelatorio(dados) {
+            const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
+            tabelaRelatorio.innerHTML = '';
+        
+            function formatarHorasEMinutos(minutosTotais) {
+                const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                const minutos = Math.abs(minutosTotais % 60);
+                return `${horas}h ${minutos}m`;
+            }
+        
+            // Função para ajustar o horário para UTC-3
+            function ajustarHorario(horario) {
+                const [hora, minuto] = horario.split(':').map(Number);
+                let novaHora = hora - 3; // Subtrai 3 horas
+        
+                // Verifica se a nova hora é negativa
+                if (novaHora < 0) {
+                    novaHora += 24; // Ajusta para o dia anterior
+                }
+        
+                return [novaHora, minuto];
+            }
+            let saldoTotalMinutos = 0;
+            dados.pontos.forEach(ponto => {
+                console.log('Ponto atual:', ponto);
+                let saidaExibida = ponto.saida;
+                let horasTrabalhadas = 0; // Inicializa as horas trabalhadas
+        
+                // Converte entrada e saídas para minutos, ajustando para UTC-3
+                const [horaEntrada, minutoEntrada] = ajustarHorario(ponto.entrada);
+                const [horaSaidaAlmoco, minutoSaidaAlmoco] = ajustarHorario(ponto.saida_almoco);
+                const [horaVoltaAlmoco, minutoVoltaAlmoco] = ajustarHorario(ponto.volta_almoco);
+                const [horaSaida, minutoSaida] = ajustarHorario(saidaExibida);
+        
+                // Calcular minutos de cada período
+                const entradaEmMinutos = horaEntrada * 60 + minutoEntrada;
+                const saidaAlmocoEmMinutos = horaSaidaAlmoco * 60 + minutoSaidaAlmoco;
+                const voltaAlmocoEmMinutos = horaVoltaAlmoco * 60 + minutoVoltaAlmoco;
+                const saidaEmMinutos = horaSaida * 60 + minutoSaida;
+        
+                if (saidaEmMinutos < entradaEmMinutos) {
+                    horasTrabalhadas += (1440 - entradaEmMinutos) + (saidaEmMinutos); // até meia-noite
+                } else {
+                    horasTrabalhadas += (saidaAlmocoEmMinutos - entradaEmMinutos); // Entrada até saída do almoço
+                    horasTrabalhadas += (saidaEmMinutos - voltaAlmocoEmMinutos); // Saída do almoço até saída final
+                }
+                
+                // Ajuste para o caso em que a saída é antes de 6h
+                if (horaSaida < 6) {
+                    const horaPadrao = 23 * 60 + 30; // 23:30 em minutos
+                    const horaReal = horaSaida * 60 + minutoSaida; // Saída real em minutos
+                    horasTrabalhadas += (horaReal - horaPadrao); // Ajuste
+                }
+                
+                // Considerar o intervalo após meia-noite
+                if (saidaEmMinutos < voltaAlmocoEmMinutos) {
+                    horasTrabalhadas += (1440 - voltaAlmocoEmMinutos) + saidaEmMinutos; // até meia-noite e depois
+                }
+                saldoTotalMinutos += horasTrabalhadas;
+
+           
+                const linha = document.createElement('tr');
+                linha.innerHTML = `
+                    <td>${ponto.data}</td>
+                    <td>${ponto.entrada || 'N/A'}</td>
+                    <td>${ponto.saida_almoco || 'N/A'}</td>
+                    <td>${ponto.volta_almoco || 'N/A'}</td>
+                    <td>${saidaExibida || 'N/A'}</td>
+                    <td>${formatarHorasEMinutos(horasTrabalhadas)}</td>
+                    `;
+                tabelaRelatorio.appendChild(linha);
+            });
+        
+            const saldoTotalFormatado = formatarHorasEMinutos(saldoTotalMinutos);
+           const saldo = (saldoTotalMinutos / 480).toFixed(2);
+          
+            const saldoTotalFor = formatarHorasEMinutos(saldo);          
+    console.log( "saldo total", saldoTotalFormatado);
+    const linhaSaldoTotal = document.createElement('tr');
+    const classeSaldo = saldoTotalMinutos >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+
+    linhaSaldoTotal.innerHTML = `
+        <td colspan="6"><strong>Saldo Total</strong></td>
+        <td class="${classeSaldo}"><strong>${saldoTotalFor}</strong></td>
+    `;
+        
+            tabelaRelatorio.appendChild(linhaSaldoTotal);
+        }
+       
+        */
+        
+        
+        
+
+//document.querySelector('#tabelaRelatorio tbody').appendChild(linhaSaldoTotal);
+      //  }
+        function exportarRelatorio() {
+            const funcionarioId = document.getElementById('funcionario_id_relatorio').value;
+            const dataInicio = document.getElementById('data_inicio').value;
+            const dataFim = document.getElementById('data_fim').value;
+    
+            const url = `/relatorio/exportar?funcionario_id=${funcionarioId}&data_inicio=${dataInicio}&data_fim=${dataFim}`;
+            window.location.href = url; // Redireciona para o endpoint de exportação
+        }
+         function cadastrarFuncionario() {
+            const form = document.getElementById('cadastroFuncionarioForm');
+            
+            // Cria um objeto com os dados do formulário
+            const data = {
+                nome: form.nome.value,
+                email: form.email.value,
+                senha: form.senha.value
+            };
+        console.log("dados", data);
+            fetch('/funcionarios/cadastrar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.text())
+             .then(result => showMessage(result.message))
+             .catch(error => showMessage(error.message, 'error'));
+             window.location.reload();
+        }
+         
+ 
+        function editarPonto() {
+            const form = document.getElementById('editarPontoForm');
+            const funcionario_id = form.funcionario_id_editar.value;
+            const data = form.data_editar.value;
+            const entrada = form.entrada_editar.value;
+            const saida_almoco = form.saida_almoco_editar.value;
+            const volta_almoco = form.volta_almoco_editar.value;
+            const saida = form.saida_editar.value;
+        
+            const dados = {
+                funcionario_id,
+                data,
+                entrada,
+                saida_almoco,
+                volta_almoco,
+                saida
+            };
+        
+            fetch(`/ponto/editar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dados)
+            })
+            .then(response => response.text())
+            .then(result => alert(result))
+            .catch(error => console.error('Erro ao editar ponto:', error));
+        }
+        window.onload = function() {
+            if (localStorage.getItem('autenticado') === 'true') {
+                document.getElementById('loginDiv').style.display = 'none';  // Esconde a tela de login
+                document.getElementById('conteudoProtegido').style.display = 'block';  // Mostra o conteúdo protegido
+            }
+        }
+        function verificar() {
+            var conteudo = document.getElementById('conteudoProteted');
+            
+            // Alterna a visibilidade
+            if (conteudo.style.display === 'none') {
+                conteudo.style.display = 'block';  // Mostra o conteúdo
+            } else {
+                conteudo.style.display = 'none';   // Esconde o conteúdo
+            }
+        }
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            window.location.href = '/logout';
+        });
+       /* function verificarSenha() {
+            const senha = document.getElementById('senha_login').value;
+            
+            // Defina a senha correta para acesso
+            const senhaCorreta = '123';  // Você deve substituir isso por algo mais seguro
+            
+            if (senha === senhaCorreta) {
+                // Armazena no Local Storage que o usuário autenticou
+                localStorage.setItem('autenticado', 'true');
+                
+                document.getElementById('loginDiv').style.display = 'none';  // Esconde a tela de login
+                document.getElementById('conteudoProtegido').style.display = 'block';  // Mostra o conteúdo protegido
+            } else {
+                alert('Senha incorreta!');
+            }
+        }*/
+        function verificar() {
+            var conteudo = document.getElementById('conteudoProteted');
+            if (conteudo.style.display === 'none') {
+                conteudo.style.display = 'block';
+            } else {
+                conteudo.style.display = 'none';
+            }
+        }
+    
+        function verificarSenha() {
+            const senha = document.getElementById('senha_login').value;
+            
+            // Envia a senha para o backend
+            fetch('/verificar-senha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ senha: senha })  // Envia a senha como JSON
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.autenticado) {
+                    // Armazena no Local Storage que o usuário autenticou
+                    localStorage.setItem('autenticado', 'true');
+    
+                    // Esconde a tela de login e mostra o conteúdo protegido
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('conteudoProtegido').style.display = 'block';
+                } else {
+                    alert('Senha incorreta!');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao verificar a senha:', error);
+            });
+        }
+        
+        
+    
+        function fecharSessao() {
+            // Remove a autenticação do Local Storage e volta para a tela de login
+            localStorage.removeItem('autenticado');
+            document.getElementById('loginDiv').style.display = 'block';  // Mostra a tela de login
+            document.getElementById('conteudoProtegido').style.display = 'none';  
+            window.location.reload();
+        }
+        
+        
+
+      /*  document.getElementById('deleteForm').addEventListener('submit', function(event) {
+            event.preventDefault();  // Evita o comportamento padrão do formulário
+    
+            const funcionarioId = document.getElementById('funcionario_id_delete').value;
+            console.log("func", funcionarioId);
+            if (confirm('Tem certeza que deseja excluir este funcionário?')) {
+                fetch('/deletar-funcionario', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ funcionario_id: funcionarioId })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        // Se quiser remover o funcionário do select após exclusão:
+                        const option = document.querySelector(`#funcionario_id_delete option[value='${funcionarioId}']`);
+                        if (option) {
+                            option.remove();  // Remove o funcionário do dropdown
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao excluir funcionário:', error);
+                });
+            }
+        });*/
+     </script>
+ </body>
+ </html>
