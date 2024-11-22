@@ -322,7 +322,7 @@ app.post('/ponto/editar', async (req, res) => {
 
 
 app.post('/funcionarios/cadastrar', async (req, res) => {
-    const { nome, email, senha } = req.body;
+    const { nome, email, carga, codigo, senha } = req.body;
 
     try {
         // Gerando o hash da senha
@@ -333,8 +333,8 @@ app.post('/funcionarios/cadastrar', async (req, res) => {
             }
 
             // Inserindo o nome, email e o hash da senha no banco de dados
-            const sql = 'INSERT INTO joaocolaboradores (nome, email, senha) VALUES (?, ?, ?)';
-            await query(sql, [nome, email, hash]); // Salvando o hash no banco
+            const sql = 'INSERT INTO joaocolaboradores (nome, email, carga, codigo, senha) VALUES (?, ?, ?)';
+            await query(sql, [nome, email, carga, codigo, hash]); // Salvando o hash no banco
 
             res.redirect('/');
         });
