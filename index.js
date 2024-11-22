@@ -48,7 +48,7 @@ function query(sql, params) {
 // Rotas
 app.get('/', verificarAutenticacao, async (req, res) => {
     try {
-        const sql = 'SELECT id, nome FROM joaocolaboradores'
+        const sql = 'SELECT codigo, nome FROM joaocolaboradores'
         console.log("sql", sql)
         const result = await query(sql);
         console.log("result", result);
@@ -322,7 +322,7 @@ app.post('/ponto/editar', async (req, res) => {
 
 
 app.post('/funcionarios/cadastrar', async (req, res) => {
-    const { nome, email, carga, codigo, senha } = req.body;
+    const { codigo, nome, email, carga, senha} = req.body;
 
     try {
         // Gerando o hash da senha
@@ -333,8 +333,8 @@ app.post('/funcionarios/cadastrar', async (req, res) => {
             }
 
             // Inserindo o nome, email e o hash da senha no banco de dados
-            const sql = 'INSERT INTO joaocolaboradores (nome, email, codigo, codigo, senha) VALUES (?, ?, ?)';
-            await query(sql, [nome, email, carga, codigo, hash]); // Salvando o hash no banco
+            const sql = 'INSERT INTO joaocolaboradores (codigo, nome, email, carga, senha) VALUES (?, ?, ?, ?, ?)';
+            await query(sql, [codigo, nome, email, carga, hash]); // Salvando o hash no banco
 
             res.redirect('/');
         });
@@ -348,7 +348,7 @@ app.post('/funcionarios/cadastrar', async (req, res) => {
 });
 
 app.get('/funcionarios', async (req, res) => {
-    const sql = 'SELECT id, nome FROM joaocolaboradores';
+    const sql = 'SELECT codigo, nome FROM joaocolaboradores';
     try {
         const result = await query(sql);
         res.json(result);
@@ -364,9 +364,9 @@ app.post('/deletar-funcionario', (req, res) => {
     if (!funcionario_id) 
         return res.status(400).json({ message: 'ID do funcionário é obrigatório' });
 
-    const verificarFuncionarioSQL = 'SELECT * FROM joaocolaboradores WHERE id = ?';
+    const verificarFuncionarioSQL = 'SELECT * FROM joaocolaboradores WHERE codigo = ?';
     const deletePontosSQL = 'DELETE FROM joao WHERE funcionario_id = ?';
-    const deleteFuncionarioSQL = 'DELETE FROM joaocolaboradores WHERE id = ?';
+    const deleteFuncionarioSQL = 'DELETE FROM joaocolaboradores WHERE codigo = ?';
 
     // Verifica se o funcionário existe
     db.query(verificarFuncionarioSQL, [funcionario_id], (err, results) => {
@@ -421,14 +421,40 @@ app.post('/deletar-funcionario', (req, res) => {
 
 app.get('/login', (req, res) => {
     res.render('login');
-});
+});/*
+app.post('/login', (req, res) => {
+    const { funcionario_id, senha } = req.body;
+
+    const sql = 'SELECT senha FROM joaocolaboradores ';
+    db.query(sql, [funcionario_id], (err, results) => {
+        if (err) {
+            console.error("Erro na consulta ao banco de dados:", err);
+            return res.status(500).json({ message: 'Erro ao realizar login' });
+        }
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Funcionário não encontrado.' });
+        }
+
+        const senhaCorreta = results[0].senha;
+
+        // Comparação direta com a senha fixa "6161"
+        if (senha !== '6161') {
+            return res.status(403).json({ autenticado: false, message: 'Senha incorreta.' });
+        }
+
+        console.log("Login bem-sucedido para o ID:", funcionario_id);
+        req.session.funcionarioId = funcionario_id;
+        res.status(200).json({ autenticado: true, message: 'Login realizado com sucesso!' });
+    });
+});*/
 
 // Rota para autenticação de login
 app.post('/login', (req, res) => {
-    const { funcionario_id, senha } = req.body;    
+   const { funcionario_id, senha } = req.body;    
 
-    const sql = 'SELECT senha FROM joaocolaboradores WHERE id = ?';
+    const sql = 'SELECT senha FROM joaocolaboradores WHERE codigo = ?';
     db.query(sql, [funcionario_id], (err, results) => {
+        console.log("resultado", results)
         if (err) {
             console.error("Erro na consulta ao banco de dados:", err);
             return res.status(500).json({ message: 'Erro ao realizar login' });
@@ -441,7 +467,7 @@ app.post('/login', (req, res) => {
         const senhaCorreta = results[0].senha;
         
 
-        bcrypt.compare(senha, senhaCorreta, (err, match) => {
+       bcrypt.compare(senha, senhaCorreta, (err, match) => {
             if (err) {
                 console.error("Erro ao comparar senha:", err);
                 return res.status(500).json({ message: 'Erro ao realizar login' });
@@ -468,7 +494,7 @@ function verificarAutenticacao(req, res, next) {
 // Rota protegida para o ponto (index)
 app.get('/index/:funcionario_id', verificarAutenticacao, (req, res) => {
     const funcionarioId = req.params.funcionario_id;
-    const sql = 'SELECT * FROM joaocolaboradores WHERE id = ?';
+    const sql = 'SELECT * FROM joaocolaboradores WHERE codigo = ?';
 
     db.query(sql, [funcionarioId], (error, results) => {
         console.log("resultado", results);
