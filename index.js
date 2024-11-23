@@ -338,7 +338,7 @@ app.post('/deletar-funcionario', (req, res) => {
             return res.status(404).json({ message: 'Funcionário não encontrado' });
 
         // Verifica se o ID é 3107 e impede a exclusão
-        if (funcionario_id == 6) 
+        if (funcionario_id == 2201) 
             return res.status(403).json({ message: 'Administrador do sistema não pode ser excluído' });
 
         // Exclui pontos associados ao funcionário
