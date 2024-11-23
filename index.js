@@ -58,14 +58,14 @@ app.get('/', verificarAutenticacao, async (req, res) => {
         return res.status(500).send('Erro ao buscar funcionários');
     }
 });
-
+/*
 app.post('/ponto/entrada', async (req, res) => {
     const { funcionario_id } = req.body;
     const dataAtual = new Date();
     const horaEntrada = dataAtual.toTimeString().slice(0, 8);
 
     try {
-        const sqls = 'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ?';
+        const sqls = 'SELECT * FROM pontos WHERE funcionario_id = ? AND DATE(data) = ?';
         const resultPonto = await query(sqls, [funcionario_id, dataAtual.toISOString().slice(0, 10)]);
 
         if (resultPonto.length > 0) {
@@ -76,7 +76,7 @@ app.post('/ponto/entrada', async (req, res) => {
             dataAtual.setDate(dataAtual.getDate() + 1);
         }
 
-        const sql = 'INSERT INTO joao (funcionario_id, entrada, data) VALUES (?, ?, ?)';
+        const sql = 'INSERT INTO pontos (funcionario_id, entrada, data) VALUES (?, ?, ?)';
         await query(sql, [funcionario_id, horaEntrada, dataAtual]);
 
         return res.status(200).json({ message: 'Entrada registrada com sucesso!' });
@@ -92,14 +92,14 @@ app.post('/ponto/saida-almoco', async (req, res) => {
     const dataAtualFormatada = dataAtual.toISOString().slice(0, 10);
     const horaSaidaAlmoco = dataAtual.toTimeString().slice(0, 8);
     try {
-        const sqlal = 'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ? AND saida_almoco IS NOT NULL'
+        const sqlal = 'SELECT * FROM pontos WHERE funcionario_id = ? AND DATE(data) = ? AND saida_almoco IS NOT NULL'
         const result = await query(sqlal, [funcionario_id, dataAtualFormatada]);
         
         if (result.length > 0) {
             return res.status(400).json({ message: 'Já existe uma saída para o almoço registrada para hoje.' });
         }
 
-        const sql = 'UPDATE joao SET saida_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
+        const sql = 'UPDATE pontos SET saida_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
 const datas = await query(sql, [horaSaidaAlmoco, funcionario_id, dataAtualFormatada]);
 console.log("datas", datas);
         return res.status(200).json({ message: 'Ponto de saída para o almoço registrado com sucesso!' });
@@ -117,7 +117,7 @@ app.post('/ponto/volta-almoco', async (req, res) => {
 
     try {
         const result = await query(
-            'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ? AND volta_almoco IS NOT NULL',
+            'SELECT * FROM pontos WHERE funcionario_id = ? AND DATE(data) = ? AND volta_almoco IS NOT NULL',
             [funcionario_id, dataAtualFormatada]
         );
 
@@ -125,7 +125,7 @@ app.post('/ponto/volta-almoco', async (req, res) => {
             return res.status(400).json({ message: 'Já existe uma volta do almoço registrada para hoje.' });
         }
 
-        const sql = 'UPDATE joao SET volta_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
+        const sql = 'UPDATE pontos SET volta_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
 const datas = await query(sql, [horaVoltaAlmoco, funcionario_id, dataAtualFormatada]);
 console.log("datas", datas);
         return res.status(200).json({ message: 'Ponto de volta do almoço registrado com sucesso!' });
@@ -144,7 +144,7 @@ app.post('/ponto/saida', async (req, res) => {
         // Consulta para verificar a quantidade de saídas já registradas no dia
         const sqls = `
             SELECT COUNT(*) AS totalSaidas 
-            FROM joao 
+            FROM pontos 
             WHERE funcionario_id = ? AND DATE(data) = ? AND saida IS NOT NULL`;
         const [resultPonto] = await query(sqls, [funcionario_id, dataAtualFormatada]);
 
@@ -155,7 +155,7 @@ app.post('/ponto/saida', async (req, res) => {
 
         // Atualiza ou insere o registro de saída
         const sql = `
-            UPDATE joao 
+            UPDATE pontos 
             SET saida = ?, horas_extras = ? 
             WHERE funcionario_id = ? AND DATE(data) = ?`;
         await query(sql, [
@@ -164,6 +164,121 @@ app.post('/ponto/saida', async (req, res) => {
             funcionario_id,
             dataAtualFormatada,
         ]);
+
+        res.json({ message: 'Saída registrada com sucesso.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao registrar saída.' });
+    }
+});
+*/
+const adjustToBrasiliaTime = (date) => {
+    // Converte o horário UTC para o horário de Brasília (GMT-3)
+    const brDate = new Date(date.getTime() - 3 * 3600000);
+    return brDate;
+};
+
+app.post('/ponto/entrada', async (req, res) => {
+    const { funcionario_id } = req.body;
+    const dataAtual = adjustToBrasiliaTime(new Date());
+    const horaEntrada = dataAtual.toTimeString().slice(0, 8);
+
+    try {
+        const sqls = 'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ?';
+        const resultPonto = await query(sqls, [funcionario_id, dataAtual.toISOString().slice(0, 10)]);
+
+        if (resultPonto.length > 0) {
+            return res.status(400).json({ message: 'Já existe uma entrada registrada para hoje.' });
+        }
+
+        // Ajusta data para o próximo dia se a hora for após 22h
+        if (dataAtual.getHours() >= 22) {
+            dataAtual.setDate(dataAtual.getDate() + 1);
+        }
+
+        const sql = 'INSERT INTO joao (funcionario_id, entrada, data) VALUES (?, ?, ?)';
+        await query(sql, [funcionario_id, horaEntrada, dataAtual]);
+
+        return res.status(200).json({ message: 'Entrada registrada com sucesso!' });
+    } catch (err) {
+        console.error('Erro ao registrar entrada:', err);
+        return res.status(500).json({ error: 'Erro ao registrar entrada' });
+    }
+});
+
+app.post('/ponto/saida-almoco', async (req, res) => {
+    const { funcionario_id } = req.body;
+    const dataAtual = adjustToBrasiliaTime(new Date());
+    const dataAtualFormatada = dataAtual.toISOString().slice(0, 10);
+    const horaSaidaAlmoco = dataAtual.toTimeString().slice(0, 8);
+
+    try {
+        const sqlal = 'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ? AND saida_almoco IS NOT NULL';
+        const result = await query(sqlal, [funcionario_id, dataAtualFormatada]);
+
+        if (result.length > 0) {
+            return res.status(400).json({ message: 'Já existe uma saída para o almoço registrada para hoje.' });
+        }
+
+        const sql = 'UPDATE joao SET saida_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
+        await query(sql, [horaSaidaAlmoco, funcionario_id, dataAtualFormatada]);
+
+        return res.status(200).json({ message: 'Ponto de saída para o almoço registrado com sucesso!' });
+    } catch (err) {
+        console.error('Erro ao registrar saída para o almoço:', err);
+        return res.status(500).json({ error: 'Erro ao registrar saída para o almoço' });
+    }
+});
+
+app.post('/ponto/volta-almoco', async (req, res) => {
+    const { funcionario_id } = req.body;
+    const dataAtual = adjustToBrasiliaTime(new Date());
+    const dataAtualFormatada = dataAtual.toISOString().slice(0, 10);
+    const horaVoltaAlmoco = dataAtual.toTimeString().slice(0, 8);
+
+    try {
+        const result = await query(
+            'SELECT * FROM joao WHERE funcionario_id = ? AND DATE(data) = ? AND volta_almoco IS NOT NULL',
+            [funcionario_id, dataAtualFormatada]
+        );
+
+        if (result.length > 0) {
+            return res.status(400).json({ message: 'Já existe uma volta do almoço registrada para hoje.' });
+        }
+
+        const sql = 'UPDATE joao SET volta_almoco = ? WHERE funcionario_id = ? AND DATE(data) = ?';
+        await query(sql, [horaVoltaAlmoco, funcionario_id, dataAtualFormatada]);
+
+        return res.status(200).json({ message: 'Ponto de volta do almoço registrado com sucesso!' });
+    } catch (err) {
+        console.error('Erro ao registrar volta do almoço:', err);
+        return res.status(500).json({ error: 'Erro ao registrar volta do almoço' });
+    }
+});
+
+app.post('/ponto/saida', async (req, res) => {
+    const { funcionario_id } = req.body;
+    const dataAtual = adjustToBrasiliaTime(new Date());
+    const dataAtualFormatada = dataAtual.toISOString().slice(0, 10);
+    const horaSaidaCompleta = dataAtual.toTimeString().slice(0, 8);
+    const horasExtras = '00:00:00';
+
+    try {
+        const sqls = `
+            SELECT COUNT(*) AS totalSaidas 
+            FROM joao 
+            WHERE funcionario_id = ? AND DATE(data) = ? AND saida IS NOT NULL`;
+        const [resultPonto] = await query(sqls, [funcionario_id, dataAtualFormatada]);
+
+        if (resultPonto.totalSaidas >= 2) {
+            return res.status(400).json({ message: 'Já foram registradas duas saídas para hoje.' });
+        }
+
+        const sql = `
+            UPDATE joao 
+            SET saida = ?, horas_extras = ? 
+            WHERE funcionario_id = ? AND DATE(data) = ?`;
+        await query(sql, [horaSaidaCompleta, horasExtras, funcionario_id, dataAtualFormatada]);
 
         res.json({ message: 'Saída registrada com sucesso.' });
     } catch (err) {
@@ -250,7 +365,7 @@ app.get('/relatorio', async (req, res) => {
             saida_almoco, 
             volta_almoco, 
             saida
-        FROM joao 
+        FROM joao
         WHERE funcionario_id = ? AND data BETWEEN ? AND ?
     `;
 
@@ -322,7 +437,7 @@ app.post('/ponto/editar', async (req, res) => {
 
 
 app.post('/funcionarios/cadastrar', async (req, res) => {
-    const { codigo, nome, email, carga, senha} = req.body;
+    const {codigo, nome, email, carga, senha } = req.body;
 
     try {
         // Gerando o hash da senha
@@ -334,8 +449,8 @@ app.post('/funcionarios/cadastrar', async (req, res) => {
 
             // Inserindo o nome, email e o hash da senha no banco de dados
             const sql = 'INSERT INTO joaocolaboradores (codigo, nome, email, carga, senha) VALUES (?, ?, ?, ?, ?)';
-            await query(sql, [codigo, nome, email, carga, hash]); // Salvando o hash no banco
-
+            const data = await query(sql, [codigo, nome, email, carga, hash]); // Salvando o hash no banco
+           console.log("data", data);
             res.redirect('/');
         });
     } catch (err) {
@@ -421,40 +536,14 @@ app.post('/deletar-funcionario', (req, res) => {
 
 app.get('/login', (req, res) => {
     res.render('login');
-});/*
-app.post('/login', (req, res) => {
-    const { funcionario_id, senha } = req.body;
-
-    const sql = 'SELECT senha FROM joaocolaboradores ';
-    db.query(sql, [funcionario_id], (err, results) => {
-        if (err) {
-            console.error("Erro na consulta ao banco de dados:", err);
-            return res.status(500).json({ message: 'Erro ao realizar login' });
-        }
-        if (results.length === 0) {
-            return res.status(404).json({ message: 'Funcionário não encontrado.' });
-        }
-
-        const senhaCorreta = results[0].senha;
-
-        // Comparação direta com a senha fixa "6161"
-        if (senha !== '6161') {
-            return res.status(403).json({ autenticado: false, message: 'Senha incorreta.' });
-        }
-
-        console.log("Login bem-sucedido para o ID:", funcionario_id);
-        req.session.funcionarioId = funcionario_id;
-        res.status(200).json({ autenticado: true, message: 'Login realizado com sucesso!' });
-    });
-});*/
+});
 
 // Rota para autenticação de login
 app.post('/login', (req, res) => {
-   const { funcionario_id, senha } = req.body;    
+    const { funcionario_id, senha } = req.body;    
 
     const sql = 'SELECT senha FROM joaocolaboradores WHERE codigo = ?';
     db.query(sql, [funcionario_id], (err, results) => {
-        console.log("resultado", results)
         if (err) {
             console.error("Erro na consulta ao banco de dados:", err);
             return res.status(500).json({ message: 'Erro ao realizar login' });
@@ -467,7 +556,7 @@ app.post('/login', (req, res) => {
         const senhaCorreta = results[0].senha;
         
 
-       bcrypt.compare(senha, senhaCorreta, (err, match) => {
+        bcrypt.compare(senha, senhaCorreta, (err, match) => {
             if (err) {
                 console.error("Erro ao comparar senha:", err);
                 return res.status(500).json({ message: 'Erro ao realizar login' });
@@ -493,8 +582,23 @@ function verificarAutenticacao(req, res, next) {
 
 // Rota protegida para o ponto (index)
 app.get('/index/:funcionario_id', verificarAutenticacao, (req, res) => {
+    const funcionarioId = req.params.funcionario_id; // ID do funcionário logado
+    const sql = 'SELECT * FROM joaocolaboradores';
+
+    db.query(sql, (error, results) => {
+        if (error) {
+            console.error('Erro ao buscar funcionários:', error);
+            return res.status(500).send('Erro ao buscar funcionários');
+        }
+
+        // Renderize o EJS com todos os funcionários e o ID do funcionário logado
+        res.render('index', { funcionarios: results, funcionarioLogado: funcionarioId });
+    });
+});
+
+/*app.get('/index/:funcionario_id', verificarAutenticacao, (req, res) => {
     const funcionarioId = req.params.funcionario_id;
-    const sql = 'SELECT * FROM joaocolaboradores WHERE codigo = ?';
+    const sql = 'SELECT * FROM funcionarios';
 
     db.query(sql, [funcionarioId], (error, results) => {
         console.log("resultado", results);
@@ -504,9 +608,22 @@ app.get('/index/:funcionario_id', verificarAutenticacao, (req, res) => {
         }
 
         res.render('index', { funcionarios: results, funcionarioLogado: funcionarioId });
+        
     });
-});
+});*/
+app.get('/buscar', async (req, res) => {
+    const sql = 'SELECT codigo, nome FROM joaocolaboradores';
 
+    try {
+        const funcionarios = await query(sql); // Executa a consulta no banco de dados
+        console.log("resultado funcionarios", funcionarios);
+
+        res.json(funcionarios); // Retorna os dados como JSON para o frontend
+    } catch (error) {
+        console.error('Erro ao buscar funcionários:', error);
+        res.status(500).send('Erro ao buscar funcionários');
+    }
+});
 
 // Rota para verificar uma senha específica para autenticação adicional
 app.post('/verificar-senha', (req, res) => {
