@@ -120,6 +120,11 @@
             background-color: #DC3545;
             color: #f0f0f0;
          }
+         .lista{            
+            text-align: left;
+            width: 60%;
+            margin: auto;
+         }
      </style>
  </head>
  <body>
@@ -132,10 +137,13 @@
              <div class="form-group">
                  <label for="funcionario_id">Selecione Seu Nome:</label>
                  <select name="funcionario_id" id="funcionario_id" disabled style="color: black; font-weight: bold;">
-                     <% funcionarios.forEach(funcionario => { %>
-                         <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
-                     <% }) %>
-                 </select>
+                    <% funcionarios.forEach(funcionario => { %>
+                        <option value="<%= funcionario.codigo %>" 
+                            <%= funcionario.codigo == funcionarioLogado ? 'selected' : '' %>>
+                            <%= funcionario.nome %>
+                        </option>
+                    <% }) %>
+                </select>
              </div>
  
              <div class="buttons">
@@ -166,9 +174,6 @@
                  <input type="text" name="nome" placeholder="Nome" required>
              </div>
              <div class="form-group">
-                 <input type="text" name="carga" placeholder="Carga Horária" required>
-             </div>
-             <div class="form-group">
                  <input type="email" name="email" placeholder="Email" required>
              </div>
              <div class="form-group">
@@ -177,16 +182,19 @@
              <div class="form-group">
                  <input type="text" name="codigo" placeholder="codigo" required>
              </div>
+             <div class="form-group">
+                 <input type="text" name="carga" placeholder="carga" required>
+             </div>
              <button type="button" class="btn-success" onclick="cadastrarFuncionario()">Cadastrar</button>
          </form>
-            
+         
          <h2>Gerar Relatório de Horas Trabalhadas</h2>
 <form id="relatorioForm">
     <div class="form-group">
         <label for="funcionario_id">Funcionário:</label>
         <select name="funcionario_id" id="funcionario_id_relatorio">
             <% funcionarios.forEach(funcionario => { %>
-                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                <option value="<%= funcionario.codigo %>"><%= funcionario.nome %></option>
             <% }) %>
         </select>
     </div>
@@ -201,7 +209,7 @@
     <button type="button" class="btn-primary" onclick="gerarRelatorio()">Gerar Relatório</button>
     <button onclick="exportarRelatorioParaCSV()">Exportar para CSV</button>
 
-    <button type="button" class="btn-secondary" onclick="exportarRelatorio()">Exportar Relatório</button>
+    <div type="button" class="btn-secondary" onclick="exportarRelatorio()"></div>
 </form>
 
 <h3>Relatório</h3>
@@ -229,7 +237,7 @@
                  <label for="funcionario_id_editar">Funcionário:</label>
                  <select name="funcionario_id" id="funcionario_id_editar">
                      <% funcionarios.forEach(funcionario => { %>
-                         <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                         <option value="<%= funcionario.codigo %>"><%= funcionario.nome %></option>
                      <% }) %>
                  </select>
              </div>
@@ -266,11 +274,30 @@
         <label for="funcionario_id">Selecione o funcionário para excluir:</label>
         <select name="funcionario_id" id="delete">
             <% funcionarios.forEach(funcionario => { %>
-                <option value="<%= funcionario.id %>"><%= funcionario.nome %></option>
+                <option value="<%= funcionario.codigo %>"><%= funcionario.nome %></option>
             <% }) %>
         </select>
         <button type="submit">Excluir Funcionário</button>
     </form>
+    <div class="lista"
+    <h1>Funcionários Listados</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nome</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% funcionarios.forEach(funcionario => { %>
+                <tr>
+                    <td><%= funcionario.codigo %></td>
+                    <td><%= funcionario.nome %></td>
+                </tr>
+            <% }); %>
+        </tbody>
+    </table> 
+    </div>
 </div>
     
      <script>
@@ -676,8 +703,8 @@
                 nome: form.nome.value,
                 email: form.email.value,
                 senha: form.senha.value,
-                carga: form.carga.value,
-                codigo: form.codigo.value
+                codigo: form.codigo.value,
+                carga: form.carga.value
             };
         console.log("dados", data);
             fetch('/funcionarios/cadastrar', {
@@ -690,7 +717,7 @@
             .then(response => response.text())
              .then(result => showMessage(result.message))
              .catch(error => showMessage(error.message, 'error'));
-             alert("Colaborador registrado com sucesso")
+             alert("Funcionario cadastrado com sucesso");
              window.location.reload();
         }
          
@@ -838,6 +865,33 @@
                 });
             }
         });*/
+        async function buscarFuncionarios() {
+            try {
+                const response = await fetch('/buscar'); // Faz a requisição para a rota '/buscar'
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar os funcionários');
+                }
+                const funcionarioslista = await response.json(); // Converte a resposta para JSON
+                
+                // Seleciona o elemento <ul> onde os funcionários serão listados
+                const lista = document.getElementById('funcionarios-list');
+                
+                // Limpa a lista antes de adicionar os novos itens
+                lista.innerHTML = '';
+        
+                // Verifique se "funcionarios" tem a estrutura correta
+                funcionarioslista.forEach(funcionario1 => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${funcionario1.id}: ${funcionario1.nome}`;
+                    lista.appendChild(listItem);
+                });
+            } catch (error) {
+                console.error(error);                
+            }
+        }
+        
+        // Chama a função ao carregar a página
+        window.onload = buscarFuncionarios;
      </script>
  </body>
  </html>
