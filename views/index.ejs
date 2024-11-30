@@ -150,7 +150,7 @@
                  <button id="logoutButton" type="button" class="btn-primary" onclick="baterPonto('entrada')">Registrar Entrada</button>
                  <button id="logoutButton" type="button" class="btn-secondary" onclick="baterPonto('saida-almoco')" disabled>Bloqueado</button>
                  <button id="logoutButton" type="button" class="btn-secondary" onclick="baterPonto('volta-almoco')" disabled>Bloqueado</button>
-                 <button id="logoutButton" type="button" class="btn-primary" onclick="baterPonto('saida')">Registrar Saída</button>
+                 <button id="logoutButton1" type="button" class="btn-primary" onclick="baterPonto('saida')">Registrar Saída</button>
              </div>
          </form><br><br>
          <div id="loginDiv">
@@ -546,6 +546,11 @@
             }
         }
         document.getElementById('logoutButton').addEventListener('click', () => {
+            setTimeout(() => {
+                window.location.href = '/logout';
+            }, 3000); // 3000 ms = 3 segundos        
+        });
+document.getElementById('logoutButton1').addEventListener('click', () => {
             setTimeout(() => {
                 window.location.href = '/logout';
             }, 3000); // 3000 ms = 3 segundos        
