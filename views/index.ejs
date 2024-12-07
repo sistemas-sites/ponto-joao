@@ -357,7 +357,7 @@
                     console.error('Erro ao gerar relatório:', error);
                 });
         }
-
+/*
         function exibirRelatorio(dados) {
             console.log("Exibindo relatório:", dados);
             const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
@@ -404,7 +404,9 @@
                     // Cálculo direto entre entrada e saída
                     horasTrabalhadas = saidaEmMinutos - entradaEmMinutos;
                 }
-        
+                if (ponto.funcionario_id === 9) {
+                    horasTrabalhadas -= 80; // Subtraindo 1h20 (80 minutos)
+                }
                 // Saldo do dia
                 const saldoDiario = horasTrabalhadas - 440; // Considerando 8 horas = 480 minutos
                 saldoTotalMinutos += saldoDiario;
@@ -436,8 +438,102 @@
             `;
             tabelaRelatorio.appendChild(linhaSaldoTotal);
         }
+        */
+        function exibirRelatorio(dados) {
+            console.log("Exibindo relatório:", dados);
+            const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
+            tabelaRelatorio.innerHTML = '';
         
-
+            // Função para formatar as horas e minutos
+            function formatarHorasEMinutos(minutosTotais) {
+                const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                const minutos = Math.abs(minutosTotais % 60);
+                const sinal = minutosTotais < 0 ? '-' : '';
+                return `${sinal}${horas}h ${minutos}m`;
+            }
+        
+            // Função para ajustar o horário, ignorando os segundos
+            function ajustarHorario(horario) {
+                const [hora, minuto] = horario.split(':').map(Number);
+                return [hora, minuto];
+            }
+        
+            let saldoTotalMinutos = 0; // Acumula o saldo total de todos os dias
+        
+            dados.pontos.forEach(ponto => {
+                console.log("Ponto:", ponto); // Verifica os dados do ponto
+        
+                let horasTrabalhadas = 0;
+                let saldoDiario = 0; // Declare saldoDiario fora da condição para evitar erro de escopo
+        
+                const [horaEntrada, minutoEntrada] = ajustarHorario(ponto.entrada);
+                const [horaSaida, minutoSaida] = ajustarHorario(ponto.saida);
+        
+                const entradaEmMinutos = horaEntrada * 60 + minutoEntrada;
+                const saidaEmMinutos = horaSaida * 60 + minutoSaida;
+        
+                if (ponto.saida_almoco && ponto.volta_almoco) {
+                    const [horaSaidaAlmoco, minutoSaidaAlmoco] = ajustarHorario(ponto.saida_almoco);
+                    const [horaVoltaAlmoco, minutoVoltaAlmoco] = ajustarHorario(ponto.volta_almoco);
+        
+                    const saidaAlmocoEmMinutos = horaSaidaAlmoco * 60 + minutoSaidaAlmoco;
+                    const voltaAlmocoEmMinutos = horaVoltaAlmoco * 60 + minutoVoltaAlmoco;
+        
+                    // Período antes do almoço
+                    horasTrabalhadas += saidaAlmocoEmMinutos - entradaEmMinutos;
+        
+                    // Período após o almoço
+                    horasTrabalhadas += saidaEmMinutos - voltaAlmocoEmMinutos;
+                } else {
+                    // Cálculo direto entre entrada e saída
+                    horasTrabalhadas = saidaEmMinutos - entradaEmMinutos;
+                }
+        
+                // Verificação para funcionário_id = 9
+                if (ponto.funcionario_id === 9) {
+                    // Definir carga horária para 6 horas (360 minutos) para o funcionário 9
+                    const cargaHorariaFuncionario9 = 360; // 6 horas
+                    saldoDiario = horasTrabalhadas - cargaHorariaFuncionario9; // Subtrair do saldo total diretamente
+                } else {
+                    // Para os demais funcionários, a carga horária é de 7h20 (440 minutos)
+                    const cargaHorariaPadrao = 440; // 7h20 = 440 minutos
+                    saldoDiario = horasTrabalhadas - cargaHorariaPadrao; // Saldo para outros funcionários
+                }
+        
+                saldoTotalMinutos += saldoDiario; // Atualizar saldo total
+        
+                // Criação da linha na tabela
+                const linha = document.createElement('tr');
+                linha.innerHTML = `
+                    <td>${ponto.data}</td>
+                    <td>${ponto.entrada || 'N/A'}</td>
+                    <td>${ponto.saida_almoco || 'N/A'}</td>
+                    <td>${ponto.volta_almoco || 'N/A'}</td>
+                    <td>${ponto.saida || 'N/A'}</td>
+                    <td>${formatarHorasEMinutos(horasTrabalhadas)}</td>
+                    <td>${formatarHorasEMinutos(saldoDiario)}</td>
+                `;
+                tabelaRelatorio.appendChild(linha);
+            });
+        
+            // Calcular e formatar o saldo total
+            const saldoTotalFormatado = formatarHorasEMinutos(saldoTotalMinutos);
+            console.log("Saldo total", saldoTotalFormatado);
+        
+            const linhaSaldoTotal = document.createElement('tr');
+            const classeSaldo = saldoTotalMinutos >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+        
+            linhaSaldoTotal.innerHTML = `
+                <td colspan="6"><strong>Saldo Total</strong></td>
+                <td class="${classeSaldo}"><strong>${saldoTotalFormatado}</strong></td>
+            `;
+            tabelaRelatorio.appendChild(linhaSaldoTotal);
+        }
+        
+        
+        
+        
+        
         function exportarRelatorioParaCSV() {
             const tabela = document.querySelector('#tabelaRelatorio');
             let csvContent = '';
@@ -631,7 +727,7 @@ document.getElementById('logoutButton1').addEventListener('click', () => {
         
         // Chama a função ao carregar a página
         window.onload = buscarFuncionarios;
-
+/*
         async function buscarRegistroParaEditar() {
             const form = document.getElementById('editarPontoForm');
             const funcionario_id = form.funcionario_id_editar.value;
@@ -662,7 +758,42 @@ document.getElementById('logoutButton1').addEventListener('click', () => {
                 console.error('Erro ao buscar registro:', error);
                 alert('Não foi possível buscar o registro. Tente novamente mais tarde.');
             }
+        }*/
+        async function buscarRegistroParaEditar() {
+            const form = document.getElementById('editarPontoForm');
+            const funcionario_id = form.funcionario_id_editar.value;
+            const data = form.data_editar.value;
+        
+            if (!funcionario_id || !data) {
+                alert('Por favor, selecione um funcionário e uma data');
+                return;
+            }
+        
+            try {
+                const response = await fetch(`/ponto/buscar?funcionario_id=${funcionario_id}&data=${data}`);
+                if (response.ok) {
+                    const registro = await response.json();
+        
+                    // Preenche os campos do formulário com os dados retornados
+                    form.entrada_editar.value = registro.entrada || '';
+                    form.saida_almoco_editar.value = registro.saida_almoco || '';
+                    form.volta_almoco_editar.value = registro.volta_almoco || '';
+                    form.saida_editar.value = registro.saida || '';
+                } else if (response.status === 404) {
+                    // Permitir preenchimento para um novo registro
+                    alert('Registro não encontrado para essa data. Preencha os campos para inserir um novo registro.');
+                    alert('Por favor selecione o colaborador correto para evitar')
+                    form.reset(); // Reseta os campos do formulário para inserção
+                    form.data_editar.value = data; // Mantém a data preenchida para inserção
+                } else {
+                    throw new Error('Erro ao buscar registro');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar registro:', error);
+                alert('Não foi possível buscar o registro. Tente novamente mais tarde.');
+            }
         }
+        
      </script>
  </body>
  </html>
