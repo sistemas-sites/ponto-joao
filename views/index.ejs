@@ -242,7 +242,7 @@
              </div>
  
              <!-- <div class="form-group">
-                 <label for="data_editar">Data:</label>
+                 <label for="data_editar">Pesquise pela Data:</label>
                  <input type="date" id="data_editar" required>
              </div> -->
              <div class="form-group">
@@ -781,8 +781,8 @@ document.getElementById('logoutButton1').addEventListener('click', () => {
                     form.saida_editar.value = registro.saida || '';
                 } else if (response.status === 404) {
                     // Permitir preenchimento para um novo registro
-                    alert('Registro não encontrado para essa data. Preencha os campos para inserir um novo registro.');
-                    alert('Por favor selecione o colaborador correto para evitar')
+                    alert('Registro não encontrado. Selecione o Colaborador e insira os dados ok.');
+                    alert('Por favor Confirme o nome do colaborador antes de salvar');
                     form.reset(); // Reseta os campos do formulário para inserção
                     form.data_editar.value = data; // Mantém a data preenchida para inserção
                 } else {
