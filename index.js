@@ -180,6 +180,7 @@ app.get('/relatorio', async (req, res) => {
     const { funcionario_id, data_inicio, data_fim } = req.query;
     const sql = `
         SELECT 
+            funcionario_id,
             data, 
             entrada, 
             saida_almoco, 
@@ -205,8 +206,79 @@ app.get('/relatorio', async (req, res) => {
         return res.status(500).json({ error: 'Erro ao gerar relatório' });
     }
 });
+app.post('/ponto/editar', async (req, res) => {
+    const { funcionario_id, data, entrada, saida_almoco, volta_almoco, saida } = req.body;
+    console.log('Dados recebidos no /ponto/editar:', req.body);
+
+    const entradaValida = entrada || null;
+    const saidaAlmocoValida = saida_almoco || null;
+    const voltaAlmocoValida = volta_almoco || null;
+    const saidaValida = saida || null;
+
+    try {
+        // Verifica se o ponto já existe para o funcionário e a data
+        const verificarSql = `
+            SELECT * FROM joao WHERE funcionario_id = ? AND data = ?
+        `;
+        const verificarResult = await query(verificarSql, [funcionario_id, data]);
+
+        if (verificarResult.length > 0) {
+            // Atualiza o registro se ele já existir
+            const atualizarSql = `
+                UPDATE joao 
+                SET entrada = ?, saida_almoco = ?, volta_almoco = ?, saida = ?
+                WHERE funcionario_id = ? AND data = ?
+            `;
+            await query(atualizarSql, [
+                entradaValida,
+                saidaAlmocoValida,
+                voltaAlmocoValida,
+                saidaValida,
+                funcionario_id,
+                data
+            ]);
+            console.log('Registro de ponto atualizado:', {
+                funcionario_id,
+                data,
+                entrada: entradaValida,
+                saida_almoco: saidaAlmocoValida,
+                volta_almoco: voltaAlmocoValida,
+                saida: saidaValida
+            });
+            res.send('Registro de ponto atualizado com sucesso');
+        } else {
+            // Caso o registro não exista, insere um novo
+            const inserirSql = `
+                INSERT INTO joao (funcionario_id, data, entrada, saida_almoco, volta_almoco, saida)
+                VALUES (?, ?, ?, ?, ?, ?)
+            `;
+            const a = await query(inserirSql, [
+                funcionario_id,
+                data,
+                entradaValida,
+                saidaAlmocoValida,
+                voltaAlmocoValida,
+                saidaValida
+            ]);
+            console.log("a", a)
+            console.log("Dados inseridos", {
+                funcionario_id,
+                data,
+                entrada: entradaValida,
+                saida_almoco: saidaAlmocoValida,
+                volta_almoco: voltaAlmocoValida,
+                saida: saidaValida
+            });
+            res.send('Registro de ponto inserido com sucesso');
+        }
+    } catch (err) {
+        console.error('Erro ao salvar ponto:', err);
+        res.status(500).send('Erro ao salvar ponto');
+    }
+});
 
 
+/*
 app.post('/ponto/editar', async (req, res) => {
     const { funcionario_id, data, entrada, saida_almoco, volta_almoco, saida } = req.body;
 
@@ -254,7 +326,7 @@ app.post('/ponto/editar', async (req, res) => {
         res.status(500).send('Erro ao editar ponto');
     }
 });
-
+*/
 
 
 app.get('/ponto/buscar', async (req, res) => {
