@@ -182,10 +182,10 @@ app.get('/relatorio', async (req, res) => {
         SELECT 
             funcionario_id,
             data, 
-            entrada, 
-            saida_almoco, 
-            volta_almoco, 
-            saida
+            COALESCE(entrada, '') AS entrada, 
+            COALESCE(saida_almoco, '') AS saida_almoco, 
+            COALESCE(volta_almoco, '') AS volta_almoco, 
+            COALESCE(saida, '') AS saida
         FROM joao
         WHERE funcionario_id = ? AND data BETWEEN ? AND ?
     `;
