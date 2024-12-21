@@ -125,6 +125,19 @@
             width: 60%;
             margin: auto;
          }
+         .btn-excluir {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+    
+        .btn-excluir:hover {
+            background-color: darkred;
+        }
      </style>
  </head>
  <body>
@@ -439,6 +452,7 @@
             tabelaRelatorio.appendChild(linhaSaldoTotal);
         }
         */
+/*  original
         function exibirRelatorio(dados) {
             console.log("Exibindo relatório:", dados);
             const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
@@ -528,8 +542,117 @@
                 <td class="${classeSaldo}"><strong>${saldoTotalFormatado}</strong></td>
             `;
             tabelaRelatorio.appendChild(linhaSaldoTotal);
-        }
+        }    original
+        */
+
+function exibirRelatorio(dados) {
+            console.log("Exibindo relatório:", dados);
+            const tabelaRelatorio = document.querySelector('#tabelaRelatorio tbody');
+            tabelaRelatorio.innerHTML = '';
         
+            // Função para formatar as horas e minutos
+            function formatarHorasEMinutos(minutosTotais) {
+                const horas = Math.floor(Math.abs(minutosTotais) / 60);
+                const minutos = Math.abs(minutosTotais % 60);
+                const sinal = minutosTotais < 0 ? '-' : '';
+                return `${sinal}${horas}h ${minutos}m`;
+            }
+        
+            // Função para ajustar o horário, ignorando os segundos
+            function ajustarHorario(horario) {
+                const [hora, minuto] = horario.split(':').map(Number);
+                return [hora, minuto];
+            }
+        
+            let saldoTotalMinutos = 0;
+        
+            dados.pontos.forEach((ponto, index) => {
+                let horasTrabalhadas = 0;
+                let saldoDiario = 0;
+        
+                const [horaEntrada, minutoEntrada] = ajustarHorario(ponto.entrada);
+                const [horaSaida, minutoSaida] = ajustarHorario(ponto.saida);
+        
+                const entradaEmMinutos = horaEntrada * 60 + minutoEntrada;
+                const saidaEmMinutos = horaSaida * 60 + minutoSaida;
+        
+                if (ponto.saida_almoco && ponto.volta_almoco) {
+                    const [horaSaidaAlmoco, minutoSaidaAlmoco] = ajustarHorario(ponto.saida_almoco);
+                    const [horaVoltaAlmoco, minutoVoltaAlmoco] = ajustarHorario(ponto.volta_almoco);
+        
+                    const saidaAlmocoEmMinutos = horaSaidaAlmoco * 60 + minutoSaidaAlmoco;
+                    const voltaAlmocoEmMinutos = horaVoltaAlmoco * 60 + minutoVoltaAlmoco;
+        
+                    horasTrabalhadas += saidaAlmocoEmMinutos - entradaEmMinutos;
+                    horasTrabalhadas += saidaEmMinutos - voltaAlmocoEmMinutos;
+                } else {
+                    horasTrabalhadas = saidaEmMinutos - entradaEmMinutos;
+                }
+        
+                const cargaHoraria = ponto.funcionario_id === 9 ? 360 : 440;
+                saldoDiario = horasTrabalhadas - cargaHoraria;
+        
+                saldoTotalMinutos += saldoDiario;
+        
+                // Criar a linha na tabela
+                const linha = document.createElement('tr');
+                linha.innerHTML = `
+                    <td>${ponto.data}</td>
+                    <td>${ponto.entrada || 'N/A'}</td>
+                    <td>${ponto.saida_almoco || 'N/A'}</td>
+                    <td>${ponto.volta_almoco || 'N/A'}</td>
+                    <td>${ponto.saida || 'N/A'}</td>
+                    <td>${formatarHorasEMinutos(horasTrabalhadas)}</td>
+                    <td>${formatarHorasEMinutos(saldoDiario)}</td>
+                    <td><button class="btn-excluir" data="${ponto.data}" data-id="${ponto.id}" data-index="${index}">Excluir</button></td>
+                `;
+                tabelaRelatorio.appendChild(linha);
+            });
+        
+            const saldoTotalFormatado = formatarHorasEMinutos(saldoTotalMinutos);
+            const linhaSaldoTotal = document.createElement('tr');
+            const classeSaldo = saldoTotalMinutos >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+        
+            linhaSaldoTotal.innerHTML = `
+                <td colspan="7"><strong>Saldo Total</strong></td>
+                <td class="${classeSaldo}"><strong>${saldoTotalFormatado}</strong></td>
+            `;
+            tabelaRelatorio.appendChild(linhaSaldoTotal);
+        
+            // Event Listener para exclusão
+            tabelaRelatorio.addEventListener('click', async (event) => {
+                if (event.target.classList.contains('btn-excluir')) {
+                    const id = event.target.getAttribute('data-id');
+                    const index = event.target.getAttribute('data-index');
+                    const inde = event.target.getAttribute('data');
+
+                    const confirmar = window.confirm(`Tem certeza de que deseja excluir o registro com DATA ${inde}?`);
+
+                    if (!confirmar) {
+                        // Se o usuário cancelar, interrompe a execução
+                        return;
+                    }
+                    try {                       
+                       
+                        const response = await fetch(`/excluir-registro/${id}`, {
+                            method: 'DELETE'
+                        });
+        
+                        const result = await response.json();
+        
+                        if (response.ok) {                          
+                            alert("Registro excluido com sucesso")
+                            dados.pontos.splice(index, 1);
+                            exibirRelatorio(dados);
+                        } else {
+                            console.error('Erro ao excluir registro:', result.message);
+                        }
+                    } catch (error) {
+                        console.error('Erro ao comunicar com o servidor:', error);
+                    }
+                }
+            });
+        }
         
         
         
