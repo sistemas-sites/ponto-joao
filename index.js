@@ -431,7 +431,16 @@ app.post('/deletar-funcionario', (req, res) => {
         });
     });
 });
-
+app.delete('/excluir-registro/:id', (req, res) => {
+    const { id } = req.params;    
+    try {
+        const result = db.query('DELETE FROM joao WHERE id = ?', [id]);        
+        res.status(200).send({ success: true, message: 'Registro excluído com sucesso!' });
+    } catch (error) {
+        console.error(error);        
+        res.status(500).send({ success: false, message: 'Erro ao excluir registro.' });
+    }
+});
 
 app.get('/login', (req, res) => {
     res.render('login');
