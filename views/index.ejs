@@ -314,6 +314,26 @@
             <% }); %>
         </tbody>
     </table> 
+
+
+    <form id="resetarSenhaForm">
+        <div class="form-group">
+            <h2>Redefinir Senha</h2>
+            <label for="funcionario_id_reset">Código do Funcionário:</label>
+            <input type="text" id="funcionario_id_reset" name="funcionario_id_reset" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label for="nova_senha">Nova Senha:</label>
+            <input type="password" id="nova_senha" name="nova_senha" required autocomplete="off">
+        </div>
+        <button type="button" class="btn-primary" onclick="resetarSenha()">Redefinir Senha</button>
+        <div class="success-message" id="successMessage" style="display:none;">Senha redefinida com sucesso!</div>
+        <div class="error-message" id="errorMessage" style="display:none;"></div>
+    </form>
+    
+
+
+
     </div>
 </div>
     
@@ -916,7 +936,51 @@ document.getElementById('logoutButton1').addEventListener('click', () => {
                 alert('Não foi possível buscar o registro. Tente novamente mais tarde.');
             }
         }
-        
+        async function resetarSenha() {
+            const funcionario_id_reset = document.getElementById('funcionario_id_reset').value;
+            const nova_senha = document.getElementById('nova_senha').value;
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+
+            if (!funcionario_id_reset || isNaN(funcionario_id_reset)) {
+                errorMessage.textContent = 'Por favor, insira um ID de funcionário válido.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            if (!nova_senha || nova_senha.trim() === '') {
+                errorMessage.textContent = 'Por favor, insira uma nova senha.';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            try {
+                const resposta = await fetch('/funcionarios/resetar-senha', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigoFuncionario: funcionario_id_reset, novaSenha: nova_senha }),
+                });
+
+                const resultado = await resposta.json();
+                console.log("Resposta do servidor:", resultado);
+
+                if (resposta.status === 200) {
+                    successMessage.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                } else {
+                    errorMessage.textContent = resultado.message || 'Erro ao redefinir a senha.';
+                    errorMessage.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Erro ao redefinir a senha:", error);
+                errorMessage.textContent = 'Erro ao conectar-se ao servidor.';
+                errorMessage.style.display = 'block';
+            }
+        }
+
+        window.onload = function() {
+    document.getElementById('resetarSenhaForm').reset();
+}
      </script>
  </body>
  </html>
