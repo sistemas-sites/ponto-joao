@@ -547,6 +547,37 @@ app.post('/verificar-senha', (req, res) => {
         res.json({ autenticado: false });
     }
 });
+
+
+app.post('/funcionarios/resetar-senha', async (req, res) => {
+    const { codigoFuncionario, novaSenha } = req.body;
+
+    try {
+        if (!novaSenha) {
+            return res.status(400).json({ message: 'A nova senha não pode ser vazia.' });
+        }
+
+        // Gerando o hash da nova senha
+        const hashNovaSenha = await bcrypt.hash(novaSenha, saltRounds); // Gerando o hash da nova senha
+
+        // Atualizando a senha no banco de dados
+        const sql = 'UPDATE joaocolaboradores SET senha = ? WHERE codigo = ?';
+        db.query(sql, [hashNovaSenha, codigoFuncionario], (err, result) => {
+            if (err) {
+                console.error('Erro ao atualizar a senha:', err);
+                return res.status(500).json({ message: 'Erro ao redefinir a senha.' });
+            }
+
+            console.log('Senha redefinida com sucesso para o ID:', codigoFuncionario);
+            res.status(200).json({ message: 'Senha redefinida com sucesso!' });
+        });
+    } catch (err) {
+        console.error('Erro ao redefinir a senha:', err);
+        res.status(500).json({ message: 'Erro ao redefinir a senha.' });
+    }
+});
+
+
 // Logout
 app.get('/logout', (req, res) => {
     req.session.destroy(err => {
